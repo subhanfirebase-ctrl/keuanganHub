@@ -1,0 +1,14 @@
+# Mengabaikan file rahasia lokal
+.env
+*.env
+
+# Mengabaikan file sampah Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
