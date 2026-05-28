@@ -3,16 +3,18 @@ from flask import Flask
 from google import genai
 from google.genai import types
 
-# Mengaktifkan Flask untuk membuat server web gratis
+# Vercel mencari variabel 'app' ini di level paling atas
 app = Flask(__name__)
 
-@app.route('/')
-def home():
-    # Mengambil API Key secara aman dari brankas rahasia Render
+# Mengubah rute agar Vercel langsung mengeksekusi fungsi ini sebagai handler utama
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def catch_all(path):
+    # Mengambil API Key secara aman dari Environment Variables Vercel
     api_key = os.environ.get("GEMINI_API_KEY")
     
     if not api_key:
-        return "<h1>Waduh!</h1><p>API Key belum terpasang di Environment Variables Render.</p>"
+        return "<h1>Waduh!</h1><p>API Key belum terpasang di Environment Variables Vercel.</p>"
 
     try:
         # Menghubungkan program ke AI Google Gemini resmi
@@ -61,6 +63,12 @@ def home():
         return tampilan_html
 
     except Exception as e:
+        return f"<h1>Terjadi Kesalahan Teknis</h1><p>Detail error: {str(e)}</p>"
+
+# Ini tetap dipertahankan jika ingin dijalankan lokal, tapi Vercel akan otomatis menggunakan variabel 'app' di atas
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)    except Exception as e:
         return f"<h1>Terjadi Kesalahan Teknis</h1><p>Detail error: {str(e)}</p>"
 
 if __name__ == '__main__':
