@@ -4,9 +4,6 @@ from openai import OpenAI
 
 app = Flask(__name__)
 
-@app.route('/manifest.json')
-def serve_manifest():
-    return app.send_static_file('manifest.json')
 @app.route('/', methods=['GET', 'POST'])
 def chat():
     user_input = None
@@ -48,7 +45,6 @@ def chat():
         except Exception as e:
             error_msg = f"Terjadi gangguan pada transmisi data AI: {str(e)}"
 
-    # Menggunakan render_template (bukan render_template_string lagi)
     return render_template('index.html', user_input=user_input, ai_response=ai_response, error_msg=error_msg)
 
 app = app
