@@ -1,0 +1,22 @@
+</div> <!-- Tutup Workspace -->
+    <script>
+        function isiPertanyaan(teks) {
+            document.getElementById('mainInputField').value = teks;
+            document.getElementById('coreForm').submit();
+            triggerLoading();
+        }
+        function triggerLoading() {
+            var input = document.getElementById('mainInputField');
+            if (input.value.trim() === "") return false;
+            document.getElementById('loadingRow').style.display = 'flex';
+            if(document.getElementById('suggestBox')) document.getElementById('suggestBox').style.display = 'none';
+            document.getElementById('sendBtn').disabled = true;
+            var stream = document.getElementById('chatStream');
+            stream.scrollTop = stream.scrollHeight;
+            return true;
+        }
+        var streamContainer = document.getElementById('chatStream');
+        if(streamContainer) streamContainer.scrollTop = streamContainer.scrollHeight;
+    </script>
+</body>
+</html>
