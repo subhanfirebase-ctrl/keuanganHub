@@ -1,7 +1,5 @@
 import os
 from flask import Flask, render_template_string, request
-from google import genai
-from google.genai import types
 from openai import OpenAI
 
 app = Flask(__name__)
@@ -63,7 +61,7 @@ HTML_TEMPLATE = """
             <div class="message ai-msg">{{ ai_response }}</div>
         {% else %}
             <div class="message ai-msg" style="background: #fff9db; color: #856404; border-color: #ffeeba;">
-                👋 Selamat datang di ruangan chat keuanganHub! Saya AI Pakar Ekonomi Senior & Syariah. Ajukan pertanyaan seputar keuangan atau bisnis, lalu klik ikon pesawat untuk mengirim!
+                👋 Selamat datang di keuanganHub! Saya AI Pakar Ekonomi Senior & Syariah yang baru. Tanyakan apa saja seputar keuangan atau bisnis, kawan!
             </div>
         {% endif %}
         
@@ -125,55 +123,35 @@ def chat():
             error_msg = "Waduh! Pertanyaan tidak boleh kosong."
             return render_template_string(HTML_TEMPLATE, user_input=user_input, ai_response=ai_response, error_msg=error_msg)
             
-        api_key = os.environ.get("GEMINI_API_KEY")
+        # Menggunakan Groq API Key yang dipasang di Vercel
+        api_key = os.environ.get("CADANGAN_API_KEY")
         
         if not api_key:
-            error_msg = "Waduh! API Key belum terpasang di Vercel."
+            error_msg = "Waduh! Kunci API Groq (CADANGAN_API_KEY) belum terpasang di Vercel kawan."
             return render_template_string(HTML_TEMPLATE, user_input=user_input, ai_response=ai_response, error_msg=error_msg)
 
-        # 1. JALUR UTAMA: GOOGLE GEMINI
         try:
-            client = genai.Client(api_key=api_key)
-            konfigurasi_ai = types.GenerateContentConfig(
-                system_instruction="Kamu adalah seorang Ekonom Senior spesialisasi Ekonomi Indonesia dan Ahli Ekonomi Syariah. Berikan analisis yang tajam, profesional, namun mudah dipahami awam.",
-                temperature=0.7,
+            # Hubungkan langsung ke server kilat Groq
+            client = OpenAI(
+                base_url="https://api.groq.com/openai/v1", 
+                api_key=api_key
             )
             
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=user_input,
-                config=konfigurasi_ai
+            response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {
+                        "role": "system", 
+                        "content": "Kamu adalah seorang Ekonom Senior spesialisasi Ekonomi Indonesia dan Ahli Ekonomi Syariah. Berikan analisis yang tajam, profesional, namun mudah dipahami awam. Fokus pada isu makro, UMKM, keuangan digital, dan Ekonomi Islam. Berikan contoh riil di Indonesia."
+                    },
+                    {"role": "user", "content": user_input}
+                ]
             )
-            ai_response = response.text
+            ai_response = response.choices[0].message.content
 
         except Exception as e:
-            # 2. JALUR CADANGAN JIKA UTAMA LIMIT
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "503" in str(e):
-                api_key_cadangan = os.environ.get("CADANGAN_API_KEY") 
-                
-                if api_key_cadangan:
-                    try:
-                        client_cadangan = OpenAI(
-                            base_url="https://api.groq.com/openai/v1", 
-                            api_key=api_key_cadangan
-                        )
-                        
-                        response_alt = client_cadangan.chat.completions.create(
-                            model="llama-3.3-70b-versatile",
-                            messages=[
-                                {"role": "system", "content": "Kamu adalah seorang Ekonom Senior spesialisasi Ekonomi Indonesia dan Ahli Ekonomi Syariah. Berikan analisis yang tajam, profesional, namun mudah dipahami awam."},
-                                {"role": "user", "content": user_input}
-                            ]
-                        )
-                        ai_response = "[Mode Cadangan Aktif]\n\n" + response_alt.choices[0].message.content
-                    except Exception as err_cadangan:
-                        error_msg = f"Server utama sibuk, server cadangan eror: {str(err_cadangan)}"
-                else:
-                    error_msg = "Kuota harian Gemini habis, dan CADANGAN_API_KEY belum dipasang di Vercel kawan."
-            else:
-                error_msg = f"Terjadi kesalahan teknis: {str(e)}"
+            error_msg = f"Terjadi masalah pada server AI Groq: {str(e)}"
 
     return render_template_string(HTML_TEMPLATE, user_input=user_input, ai_response=ai_response, error_msg=error_msg)
 
-# PERBAIKAN VERCEL: Jangan pakai app.run(). Cukup ekspos variabel app
-# Vercel akan otomatis menangkap variabel ini sebagai WSGI handler.
+app = app
