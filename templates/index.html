@@ -1,0 +1,64 @@
+{% include 'header.html' %}
+
+<div class="chat-stream" id="chatStream">
+    
+    {% if not user_input and not ai_response and not error_msg %}
+        <!-- Tampilan Awal -->
+        <div class="message-row ai-row" style="margin-top: 40px;">
+            <div class="avatar">AI</div>
+            <div class="message-content">
+                <h2 style="margin-bottom: 8px; color: var(--primary);">Selamat Datang di Ruang Analisis</h2>
+                Halo kawan! Silakan ajukan pertanyaan analisis keuangan atau strategi bisnis syariah kamu di bawah ini.
+            </div>
+        </div>
+
+        <div class="suggestions-container" id="suggestBox">
+            <button class="suggestion-card" onclick="isiPertanyaan('Bagaimana strategi mengelola arus kas (cashflow) bagi UMKM?')">
+                <strong>📊 Manajemen UMKM</strong>
+            </button>
+            <button class="suggestion-card" onclick="isiPertanyaan('Apa saja syarat mutlak bisnis dikategorikan halal dalam Islam?')">
+                <strong>🌙 Prinsip Syariah</strong>
+            </button>
+        </div>
+    {% endif %}
+
+    <!-- Alur Chat Dinamis -->
+    {% if user_input %}
+        <div class="message-row user-row">
+            <div class="avatar">Kamu</div>
+            <div class="message-content">{{ user_input }}</div>
+        </div>
+    {% endif %}
+    
+    {% if error_msg %}
+        <div class="error-banner">⚠️ {{ error_msg }}</div>
+    {% elif ai_response %}
+        <div class="message-row ai-row">
+            <div class="avatar">AI</div>
+            <div class="message-content">{{ ai_response }}</div>
+        </div>
+    {% endif %}
+    
+    <!-- Animasi Loading -->
+    <div class="message-row loading-row" id="loadingRow">
+        <div class="avatar" style="background:#f1f5f9; color:#94a3b8;">...</div>
+        <div style="display:flex; gap:6px; align-items:center;">
+            <div class="pulse-dot"></div>
+            <div class="pulse-dot"></div>
+            <div class="pulse-dot"></div>
+        </div>
+    </div>
+</div>
+
+<div class="input-panel">
+    <div class="input-container-wrapper">
+        <form method="POST" id="coreForm" class="input-bar-form" onsubmit="return triggerLoading()">
+            <input type="text" name="pertanyaan" id="mainInputField" placeholder="Ketik pesan di sini..." required autocomplete="off">
+            <button type="submit" class="send-button" id="sendBtn">
+                <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+            </button>
+        </form>
+    </div>
+</div>
+
+{% include 'footer.html' %}
