@@ -2,11 +2,11 @@ import os
 from flask import Flask, render_template_string, request
 from google import genai
 from google.genai import types
-from openai import OpenAI  # Library untuk memanggil API cadangan
+from openai import OpenAI
 
 app = Flask(__name__)
 
-# Tampilan halaman chat interaktif + Animasi Grafik Naik (Tanpa Logo)
+# Tampilan halaman chat interaktif (Tanpa Logo)
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -30,7 +30,6 @@ HTML_TEMPLATE = """
         button:active { transform: scale(0.95); }
         button svg { width: 22px; height: 22px; fill: currentColor; }
         
-        /* Animasi Loading Grafik Keuangan */
         .loading-box { display: none; align-self: flex-start; background: #f8f9fa; padding: 15px 20px; border-radius: 12px; border: 1px solid #eaeaea; max-width: 85%; }
         .loading-text { font-size: 14px; color: #666; margin-bottom: 10px; font-style: italic; }
         .chart-animation { display: flex; align-items: flex-end; gap: 4px; height: 30px; width: 50px; padding-left: 5px; border-left: 2px solid #ccc; border-bottom: 2px solid #ccc; }
@@ -43,7 +42,6 @@ HTML_TEMPLATE = """
             0% { transform: scaleY(0.3); }
             100% { transform: scaleY(1); }
         }
-        
         .error { color: #721c24; background: #f8d7da; padding: 12px; border-radius: 8px; text-align: center; font-size: 14px; width: 100%; box-sizing: border-box; }
     </style>
 </head>
@@ -82,7 +80,6 @@ HTML_TEMPLATE = """
     <div class="form-container">
         <form method="POST" id="chatForm" onsubmit="return tampilkanLoading()">
             <input type="text" name="pertanyaan" placeholder="Tanya sesuatu ke AI..." required autocomplete="off" id="inputSaja">
-            
             <button type="submit" id="tombolKirim" title="Kirim Pesan">
                 <svg viewBox="0 0 24 24">
                     <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
@@ -95,9 +92,7 @@ HTML_TEMPLATE = """
 <script>
     function tampilkanLoading() {
         var inputSaja = document.getElementById('inputSaja');
-        if (inputSaja.value.trim() === "") {
-            return false;
-        }
+        if (inputSaja.value.trim() === "") return false;
 
         var loadingBox = document.getElementById('loadingBox');
         var chatBox = document.getElementById('chatBox');
@@ -110,11 +105,9 @@ HTML_TEMPLATE = """
         chatBox.scrollTop = chatBox.scrollHeight;
         return true; 
     }
-
     var cb = document.getElementById('chatBox');
     cb.scrollTop = cb.scrollHeight;
 </script>
-
 </body>
 </html>
 """
@@ -138,15 +131,11 @@ def chat():
             error_msg = "Waduh! API Key belum terpasang di Vercel."
             return render_template_string(HTML_TEMPLATE, user_input=user_input, ai_response=ai_response, error_msg=error_msg)
 
-        # 1. MENCOBA JALUR UTAMA: GOOGLE GEMINI
+        # 1. JALUR UTAMA: GOOGLE GEMINI
         try:
             client = genai.Client(api_key=api_key)
             konfigurasi_ai = types.GenerateContentConfig(
-                system_instruction=(
-                    "Kamu adalah seorang Ekonom Senior spesialisasi Ekonomi Indonesia dan Ahli Ekonomi Syariah. "
-                    "Berikan analisis yang tajam, profesional, namun mudah dipahami awam. Fokus pada isu makro, "
-                    "UMKM, keuangan digital, dan Ekonomi Islam. Berikan contoh riil di Indonesia."
-                ),
+                system_instruction="Kamu adalah seorang Ekonom Senior spesialisasi Ekonomi Indonesia dan Ahli Ekonomi Syariah. Berikan analisis yang tajam, profesional, namun mudah dipahami awam.",
                 temperature=0.7,
             )
             
@@ -158,13 +147,12 @@ def chat():
             ai_response = response.text
 
         except Exception as e:
-            # 2. JIKA GEMINI LIMIT (429/503), OTOMATIS LEMPAR KE API CADANGAN (GROQ/OPENROUTER)
+            # 2. JALUR CADANGAN JIKA UTAMA LIMIT
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "503" in str(e):
                 api_key_cadangan = os.environ.get("CADANGAN_API_KEY") 
                 
                 if api_key_cadangan:
                     try:
-                        # Menggunakan format OpenAI (kompatibel dengan Groq)
                         client_cadangan = OpenAI(
                             base_url="https://api.groq.com/openai/v1", 
                             api_key=api_key_cadangan
@@ -173,25 +161,19 @@ def chat():
                         response_alt = client_cadangan.chat.completions.create(
                             model="llama-3.3-70b-versatile",
                             messages=[
-                                {
-                                    "role": "system", 
-                                    "content": "Kamu adalah seorang Ekonom Senior spesialisasi Ekonomi Indonesia dan Ahli Ekonomi Syariah. Berikan analisis yang tajam, profesional, namun mudah dipahami awam. Fokus pada isu makro, UMKM, keuangan digital, dan Ekonomi Islam. Berikan contoh riil di Indonesia."
-                                },
+                                {"role": "system", "content": "Kamu adalah seorang Ekonom Senior spesialisasi Ekonomi Indonesia dan Ahli Ekonomi Syariah. Berikan analisis yang tajam, profesional, namun mudah dipahami awam."},
                                 {"role": "user", "content": user_input}
                             ]
                         )
-                        # Ditandai agar kamu tahu sistem fallback-nya bekerja
                         ai_response = "[Mode Cadangan Aktif]\n\n" + response_alt.choices[0].message.content
-                    
                     except Exception as err_cadangan:
-                        error_msg = f"Server utama sibuk, dan server cadangan mengalami kendala: {str(err_cadangan)}"
+                        error_msg = f"Server utama sibuk, server cadangan eror: {str(err_cadangan)}"
                 else:
-                    error_msg = "Kuota gratis harian Gemini habis, dan kamu belum memasang CADANGAN_API_KEY di Vercel kawan."
+                    error_msg = "Kuota harian Gemini habis, dan CADANGAN_API_KEY belum dipasang di Vercel kawan."
             else:
                 error_msg = f"Terjadi kesalahan teknis: {str(e)}"
 
     return render_template_string(HTML_TEMPLATE, user_input=user_input, ai_response=ai_response, error_msg=error_msg)
 
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+# PERBAIKAN VERCEL: Jangan pakai app.run(). Cukup ekspos variabel app
+# Vercel akan otomatis menangkap variabel ini sebagai WSGI handler.
