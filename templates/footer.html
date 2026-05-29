@@ -1,22 +1,77 @@
 </div> <!-- Tutup Workspace -->
+
+    <!-- Tombol Mengambang Pintasan Fullscreen (Akan hilang jika sudah fullscreen) -->
+    <button id="fullscreenTriggerBtn" onclick="aktifkanLayarPenuh()" style="position: fixed; top: 12px; right: 12px; z-index: 9999; background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;">
+        📱 Mode Aplikasi
+    </button>
+
     <script>
+        // Fungsi Utama JavaScript untuk Memaksa Browser Masuk Mode Fullscreen Murni
+        function aktifkanLayarPenuh() {
+            var docElm = document.documentElement;
+            
+            if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
+                // Jalur lintas browser (Chrome, Safari, Firefox, Edge)
+                if (docElm.requestFullscreen) {
+                    docElm.requestFullscreen();
+                } else if (docElm.webkitRequestFullscreen) { /* Safari / iOS */
+                    docElm.webkitRequestFullscreen();
+                } else if (docElm.mozRequestFullScreen) { /* Firefox */
+                    docElm.mozRequestFullScreen();
+                } else if (docElm.msRequestFullscreen) { /* IE/Edge */
+                    docElm.msRequestFullscreen();
+                }
+            }
+        }
+
+        // Otomatis sembunyikan tombol "Mode Aplikasi" jika layar sudah berhasil penuh
+        function cekStatusLayar() {
+            var tombol = document.getElementById('fullscreenTriggerBtn');
+            var isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+            
+            if (isFullscreen) {
+                tombol.style.display = 'none'; // Sembunyikan tombol jika sudah full
+            } else {
+                tombol.style.display = 'block'; // Munculkan kembali jika pengguna keluar dari full screen
+            }
+        }
+
+        // Pasang pendeteksi perubahan layar di semua jenis browser
+        document.addEventListener("fullscreenchange", cekStatusLayar);
+        document.addEventListener("webkitfullscreenchange", cekStatusLayar);
+        document.addEventListener("mozfullscreenchange", cekStatusLayar);
+
+        // Fungsi bawaan form chat kamu kawan
         function isiPertanyaan(teks) {
             document.getElementById('mainInputField').value = teks;
+            // Sekaligus memicu fullscreen saat user klik rekomendasi pertanyaan kawan!
+            aktifkanLayarPenuh(); 
             document.getElementById('coreForm').submit();
             triggerLoading();
         }
+
         function triggerLoading() {
             var input = document.getElementById('mainInputField');
             if (input.value.trim() === "") return false;
+            
+            // Memicu fullscreen secara senyap saat pengguna menekan tombol kirim chat
+            aktifkanLayarPenuh();
+
             document.getElementById('loadingRow').style.display = 'flex';
             if(document.getElementById('suggestBox')) document.getElementById('suggestBox').style.display = 'none';
             document.getElementById('sendBtn').disabled = true;
+            
             var stream = document.getElementById('chatStream');
             stream.scrollTop = stream.scrollHeight;
             return true;
         }
+
+        // Auto gulir chat ke paling bawah
         var streamContainer = document.getElementById('chatStream');
-        if(streamContainer) streamContainer.scrollTop = streamContainer.scrollHeight;
+            if(streamContainer) streamContainer.scrollTop = streamContainer.scrollHeight;
+            
+        // Cek status saat pertama kali halaman dimuat
+        cekStatusLayar();
     </script>
 </body>
 </html>
