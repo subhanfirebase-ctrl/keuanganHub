@@ -4,6 +4,9 @@ from openai import OpenAI
 
 app = Flask(__name__)
 
+@app.route('/manifest.json')
+def serve_manifest():
+    return app.send_static_file('manifest.json')
 @app.route('/', methods=['GET', 'POST'])
 def chat():
     user_input = None
