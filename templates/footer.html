@@ -1,66 +1,6 @@
-</div> <!-- Tutup Workspace -->
-
-    <!-- Tombol Mengambang Cadangan (Tetap ada sebagai opsi manual) -->
-    <button id="fullscreenTriggerBtn" onclick="aktifkanLayarPenuh()" style="position: fixed; top: 12px; right: 12px; z-index: 9999; background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;">
-        📱 Mode Aplikasi
-    </button>
-
-    <script>
-        // Fungsi utama untuk memaksa browser masuk ke mode fullscreen murni
-        function aktifkanLayarPenuh() {
-            var docElm = document.documentElement;
-            
-            if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
-                if (docElm.requestFullscreen) {
-                    docElm.requestFullscreen();
-                } else if (docElm.webkitRequestFullscreen) { /* Android / Safari iOS */
-                    docElm.webkitRequestFullscreen();
-                } else if (docElm.mozRequestFullScreen) {
-                    docElm.mozRequestFullScreen();
-                } else if (docElm.msRequestFullscreen) {
-                    docElm.msRequestFullscreen();
-                }
-            }
-        }
-
-        // =======================================================
-        // OTOMATISASI BARU: SENSOR DETEKSI SAAT MENGETIK / FOKUS
-        // =======================================================
-        var inputField = document.getElementById('mainInputField');
-        
-        if (inputField) {
-            // Sensor 1: Begitu kolom input disentuh/fokus oleh jari user
-            inputField.addEventListener('focus', function() {
-                aktifkanLayarPenuh();
-            });
-
-            // Sensor 2: Begitu user mulai mengetik huruf pertama (seperti di Screenshot_20260529-100421.png)
-            inputField.addEventListener('input', function() {
-                aktifkanLayarPenuh();
-            });
-        }
-        // =======================================================
-
-        // Menyembunyikan tombol manual jika layar sudah sukses penuh
-        function cekStatusLayar() {
-            var tombol = document.getElementById('fullscreenTriggerBtn');
-            var isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
-            
-            if (isFullscreen) {
-                if(tombol) tombol.style.display = 'none';
-            } else {
-                if(tombol) tombol.style.display = 'block';
-            }
-        }
-
-        document.addEventListener("fullscreenchange", cekStatusLayar);
-        document.addEventListener("webkitfullscreenchange", cekStatusLayar);
-        document.addEventListener("mozfullscreenchange", cekStatusLayar);
-
-        // Logika klik tombol rekomendasi
+</div> <script>
         function isiPertanyaan(teks) {
             document.getElementById('mainInputField').value = teks;
-            aktifkanLayarPenuh(); 
             document.getElementById('coreForm').submit();
             triggerLoading();
         }
@@ -68,8 +8,6 @@
         function triggerLoading() {
             var input = document.getElementById('mainInputField');
             if (input.value.trim() === "") return false;
-            
-            aktifkanLayarPenuh();
 
             document.getElementById('loadingRow').style.display = 'flex';
             if(document.getElementById('suggestBox')) document.getElementById('suggestBox').style.display = 'none';
@@ -80,10 +18,11 @@
             return true;
         }
 
+        // Otomatis gulir layar ke bagian chat paling bawah setelah halaman dimuat
         var streamContainer = document.getElementById('chatStream');
-        if(streamContainer) streamContainer.scrollTop = streamContainer.scrollHeight;
-        
-        cekStatusLayar();
+        if(streamContainer) {
+            streamContainer.scrollTop = streamContainer.scrollHeight;
+        }
     </script>
 </body>
 </html>
