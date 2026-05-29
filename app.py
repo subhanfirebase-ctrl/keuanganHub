@@ -131,10 +131,15 @@ def chat():
             return render_template_string(HTML_TEMPLATE, user_input=user_input, ai_response=ai_response, error_msg=error_msg)
 
         try:
-            # Hubungkan langsung ke server kilat Groq
+            # Trik mengosongkan proxy lingkungan agar tidak memicu eror di library OpenAI terbaru
+            import httpx
+            http_client = httpx.Client(proxies={})
+
+            # Hubungkan ke server Groq menggunakan http_client yang bersih
             client = OpenAI(
                 base_url="https://api.groq.com/openai/v1", 
-                api_key=api_key
+                api_key=api_key,
+                http_client=http_client
             )
             
             response = client.chat.completions.create(
