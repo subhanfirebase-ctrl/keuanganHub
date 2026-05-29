@@ -2,6 +2,7 @@ import os
 from flask import Flask, render_template_string, request
 from google import genai
 from google.genai import types
+from openai import OpenAI  # Library untuk memanggil API cadangan
 
 app = Flask(__name__)
 
@@ -137,6 +138,7 @@ def chat():
             error_msg = "Waduh! API Key belum terpasang di Vercel."
             return render_template_string(HTML_TEMPLATE, user_input=user_input, ai_response=ai_response, error_msg=error_msg)
 
+        # 1. MENCOBA JALUR UTAMA: GOOGLE GEMINI
         try:
             client = genai.Client(api_key=api_key)
             konfigurasi_ai = types.GenerateContentConfig(
@@ -156,7 +158,37 @@ def chat():
             ai_response = response.text
 
         except Exception as e:
-            error_msg = f"Terjadi kesalahan teknis: {str(e)}"
+            # 2. JIKA GEMINI LIMIT (429/503), OTOMATIS LEMPAR KE API CADANGAN (GROQ/OPENROUTER)
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "503" in str(e):
+                api_key_cadangan = os.environ.get("CADANGAN_API_KEY") 
+                
+                if api_key_cadangan:
+                    try:
+                        # Menggunakan format OpenAI (kompatibel dengan Groq)
+                        client_cadangan = OpenAI(
+                            base_url="https://api.groq.com/openai/v1", 
+                            api_key=api_key_cadangan
+                        )
+                        
+                        response_alt = client_cadangan.chat.completions.create(
+                            model="llama-3.3-70b-versatile",
+                            messages=[
+                                {
+                                    "role": "system", 
+                                    "content": "Kamu adalah seorang Ekonom Senior spesialisasi Ekonomi Indonesia dan Ahli Ekonomi Syariah. Berikan analisis yang tajam, profesional, namun mudah dipahami awam. Fokus pada isu makro, UMKM, keuangan digital, dan Ekonomi Islam. Berikan contoh riil di Indonesia."
+                                },
+                                {"role": "user", "content": user_input}
+                            ]
+                        )
+                        # Ditandai agar kamu tahu sistem fallback-nya bekerja
+                        ai_response = "[Mode Cadangan Aktif]\n\n" + response_alt.choices[0].message.content
+                    
+                    except Exception as err_cadangan:
+                        error_msg = f"Server utama sibuk, dan server cadangan mengalami kendala: {str(err_cadangan)}"
+                else:
+                    error_msg = "Kuota gratis harian Gemini habis, dan kamu belum memasang CADANGAN_API_KEY di Vercel kawan."
+            else:
+                error_msg = f"Terjadi kesalahan teknis: {str(e)}"
 
     return render_template_string(HTML_TEMPLATE, user_input=user_input, ai_response=ai_response, error_msg=error_msg)
 
