@@ -149,7 +149,7 @@ def chat():
             )
             
             response = client.models.generate_content(
-                model='gemini-2.5-flash-8b',
+                model='gemini-2.5-flash',
                 contents=user_input,
                 config=konfigurasi_ai
             )
